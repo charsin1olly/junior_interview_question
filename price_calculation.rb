@@ -12,11 +12,31 @@ require './models/order.rb'
 
 class PriceCalculation
   def initialize(order_id)
+    @order = Order.find(order_id)
+    raise Order::NotFound if @order.nil?
   end
 
   def total
+    total_after_discount
+
+    if free_shipment?
+      @total
+    else
+      @total = @total+60
+    end
+  end
+
+  def total_after_discount
+    discount_ratio = Campaign.running_campaigns(@order.order_date).map{|order| (order.discount_ratio)}.max
+    
+    if discount_ratio.present?
+      @total = @order.price*(100-discount_ratio)/100
+    else
+      @total = @order.price
+    end
   end
 
   def free_shipment?
+    total_after_discount >1500
   end
 end
